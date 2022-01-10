@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  sam-app
+  indoor-iot-backend
 
-  Sample SAM Template for sam-app
+  SAM Template for indoor-iot-backend
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -35,9 +35,9 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: epc
+        - AttributeName: user_id
           AttributeType: S
-        - AttributeName: area_id
+        - AttributeName: epc
           AttributeType: S    
       KeySchema: 
         - AttributeName: epc
@@ -52,14 +52,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: epc
+        - AttributeName: user_id
           AttributeType: S
-        - AttributeName: area_id
+        - AttributeName: epc
           AttributeType: S    
       KeySchema: 
-        - AttributeName: epc
+        - AttributeName: user_id
           KeyType: HASH
-        - AttributeName: area_id
+        - AttributeName: epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
 

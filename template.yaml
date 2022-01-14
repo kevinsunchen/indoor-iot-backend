@@ -2,8 +2,15 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   indoor-iot-backend
-
   SAM Template for indoor-iot-backend
+
+Parameters:
+  APIName:
+    Type: String
+    Description: "Name of the API, for generate names for resources"
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -62,6 +69,107 @@ Resources:
         - AttributeName: epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
+  
+  DynamoDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${APIName}-appsync-dynamodb-role
+      ManagedPolicyArns:
+        - Ref: AppSyncDynamoDBPolicy
+      AssumeRolePolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+    DependsOn:
+      - AppSyncDynamoDBPolicy
+
+  AppSyncDynamoDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
+      Path: /appsync/
+      PolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: !Join [ "", [ [!GetAtt IntermediateLocationsTable.Arn, "*"], [!GetAtt LocalizedTagsTable.Arn, "*" ]]]
+  
+  AppSyncApi:
+    Type: "AWS::AppSync::GraphQLApi"
+    Description: "The GraphQL API for the App/Mobile"
+    Properties:
+      AuthenticationType: "AMAZON_COGNITO_USER_POOLS"
+      Name: !Sub ${APIName}
+      UserPoolConfig:
+        UserPoolId: !Ref UserPoolClient
+        AwsRegion: !Sub ${AWS::Region}
+        DefaultAction: "ALLOW"
+
+  AppSyncSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Definition: |
+        type Intermediate {
+          EPC: String!
+          estimate_list: [channel_estimates]!
+          timestamp: String!
+          device_id: String!
+          area_id: int!
+        }
+
+        type Channel_estimates {
+          real: float!
+          imaginary: float!
+        }
+
+        type Query {
+          allIntermediate(limit: Int, nextToken: String): [Intermediate]
+          getIntermediate(EPC: String!, timestamp: String!): Intermediate
+        }
+
+        type Mutation {
+          addIntermediate(EPC: String!,
+          estimate_list: [channel_estimates]!,
+          timestamp: String!,
+          device_id: String!,
+          area_id: int!): Intermediate
+          
+          deleteNote(EPC: String!,timestamp: String!): Intermediate
+        }
+
+        type Schema {
+          query: Query
+          mutation: Mutation
+        }
+
+  AppSyncIntermediateTableDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Name: !Sub ${APIName}_intermediate_table
+      Description: "The intermediate Table AppSync Data Source"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt DynamoDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref IntermediateLocationsTable
+        AwsRegion: !Sub ${AWS::Region}
+
+  
 
 
 Outputs:

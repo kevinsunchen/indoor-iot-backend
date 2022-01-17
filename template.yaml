@@ -11,11 +11,11 @@ Globals:
     Timeout: 20
 
 Resources:
-  LocalizationTaskFunction:
+  LocalizationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: LocalizationTaskFunction
-      Handler: localizationtask.App::handleRequest
+      CodeUri: LocalizationFunction
+      Handler: localization.App::handleRequest
       Runtime: java11
       Architectures:
         - x86_64
@@ -24,25 +24,77 @@ Resources:
         Variables:
           PARAM1: VALUE
       Events:
-        Stream:
+        DynamoDBEvent:
           Type: DynamoDB
           Properties:
-            Stream: !GetAtt IntermediateLocationsTable.StreamArn
-            BatchSize: 100
+            Stream: !GetAtt IntermediateLocationsQueue.StreamArn
+            BatchSize: 10
             StartingPosition: TRIM_HORIZON
 
-  IntermediateLocationsTable:
+  IntermediateLocationsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: IntermediateLocationsFunction
+      Handler: intermediatelocations.App::handleRequest
+      Runtime: java11
+      Architectures:
+        - x86_64
+      MemorySize: 512
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          PARAM1: VALUE
+      Events:
+        DynamoDBEvent:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt TagsHistoricalTable.StreamArn
+            BatchSize: 10
+            StartingPosition: TRIM_HORIZON
+
+  TagsHistoricalTable:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
         - AttributeName: user_id
           AttributeType: S
         - AttributeName: epc
-          AttributeType: S    
+          AttributeType: S
       KeySchema: 
-        - AttributeName: epc
+        - AttributeName: user_id
           KeyType: HASH
-        - AttributeName: area_id
+        - AttributeName: epc
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+        
+  UpdaterHistoricalTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  IntermediateLocationsQueue:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: epc
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:

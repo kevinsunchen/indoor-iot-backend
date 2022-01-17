@@ -1,4 +1,4 @@
-package helloworld;
+package intermediatelocations;
 
 import java.io.BufferedReader;
 import java.io.IOException;

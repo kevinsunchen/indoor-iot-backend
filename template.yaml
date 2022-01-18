@@ -12,6 +12,13 @@ Parameters:
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
 
+  APIKey:
+    Type: String
+    Description: The API Key for the mapping app
+    MinLength: 32
+    MaxLength: 32
+    AllowedPattern: '^[a-f0-9]*$'
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -127,7 +134,7 @@ Resources:
     Properties:
       RoleName: !Sub ${APIName}-tags-historical-role
       ManagedPolicyArns:
-        - Ref: AppSyncDynamoDBPolicy
+        - Ref: TagsHistoricalDBPolicy
       AssumeRolePolicyDocument:
         Version: 2022-1-14
         Statement:
@@ -164,12 +171,16 @@ Resources:
     Type: "AWS::AppSync::GraphQLApi"
     Description: "The GraphQL API for sending historical tag measurements"
     Properties:
-      AuthenticationType: "AMAZON_COGNITO_USER_POOLS"
+      AuthenticationType: "API_KEY"
       Name: !Sub ${APIName}-tags-historical-api
-      UserPoolConfig:
-        UserPoolId: !Ref UserPoolClient
-        AwsRegion: !Sub ${AWS::Region}
-        DefaultAction: "ALLOW"
+
+  TagsHistoricalApiKey:
+    Type: "AWS::AppSync::ApiKey"
+    Properties:
+      Description: "TagsHistoricalApi Key"
+      Expires: 1564608763
+      ApiId: !GetAtt TagsHistoricalApi.ApiId
+      
 
   TagsHistoricalSchema:
     Type: "AWS::AppSync::GraphQLSchema"
@@ -177,40 +188,25 @@ Resources:
       ApiId: !GetAtt TagsHistoricalApi.ApiId
       Definition: |
         type Measurement {
-          id: ID!
-          epc: String!
-          user_id: String!
-          area_id: Int!
-          channel_estimates: [Complex]
-          timestamp: String!
-        }
-
-        type Complex {
-          measurement_id: ID!
-          real: Float!
-          imaginary: Float!
-        }
-
-        type Query {
-          getAreaMeasurements(area_id: Int!): [Measurement]
-          getTimedMeasurements(user_id: String!, timestamp: String!): [Measurement]
+          epc: String!,
+          timestamp: String!,
+          user_id: String!,
+          area_id: Int!,
+          channel_estimates: [[Float!]!]!
         }
 
         type Mutation {
-          addMeasurement(id: ID!,
+          addMeasurement(
             epc: String!,
             timestamp: String!,
             user_id: String!,
-            area_id: Int!): Measurement
-
-          addComplex(measurement_id: ID!,
-            real: Float!
-            imaginary: Float!): Comment
+            area_id: Int!,
+            channel_estimates: [[Float!]!]!
+            ): Measurement
 
         }
 
         type Schema {
-          query: Query
           mutation: Mutation
         }
 
@@ -226,6 +222,167 @@ Resources:
         TableName: !Ref TagsHistoricalTable
         AwsRegion: !Sub ${AWS::Region}
 
+
+  addMeasurementResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: TagsHistoricalSchema
+    Properties:
+      ApiId: !GetAtt TagsHistoricalApi.ApiId
+      TypeName: Mutation
+      FieldName: addMeasurement
+      DataSourceName: !GetAtt TagsHistoricalDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2022-01-18",
+          "operation": "PutItem",
+          "key": {
+            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc),
+            "user_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+          },
+          "attributeValues": {
+            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
+            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
+            "channel_estimates": $util.dynamodb.toDynamoDBJson($ctx.args.channel_estimates)
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
+  UpdaterHistoricalDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${APIName}-updater-historical-role
+      ManagedPolicyArns:
+        - Ref: UpdaterHistoricalDBPolicy
+      AssumeRolePolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+    DependsOn:
+      -   UpdaterHistoricalDBPolicy
+
+  UpdaterHistoricalDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
+      Path: /updater_historical/
+      PolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: !Join [ "", [!GetAtt UpdaterHistoricalTable.Arn, "*"]]
+  
+  UpdaterHistoricalApi:
+    Type: "AWS::AppSync::GraphQLApi"
+    Description: "The GraphQL API for sending historical updater location"
+    Properties:
+      AuthenticationType: "API_KEY"
+      Name: !Sub ${APIName}-updater-historical-api
+
+  UpdaterHistoricalApiKey:
+    Type: "AWS::AppSync::ApiKey"
+    Properties:
+      Description: "UpdaterHistoricalApi Key"
+      Expires: 1564608763
+      ApiId: !GetAtt UpdaterHistoricalApi.ApiId
+      
+
+  UpdaterHistoricalSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt UpdaterHistoricalApi.ApiId
+      Definition: |
+        type Location {
+          timestamp: String!,
+          user_id: String!,
+          area_id: Int!,
+          pose_x: Float!,
+          pose_y: Float!,
+          pose_z: Float!,
+          pose_qx: Float!,
+          pose_qy: Float!,
+          pose_qz: Float!,
+          pose_qw: Float!
+        }
+
+        type Mutation {
+          addLocation(
+            timestamp: String!,
+            user_id: String!,
+            area_id: Int!,
+            pose_x: Float!,
+            pose_y: Float!,
+            pose_z: Float!,
+            pose_qx: Float!,
+            pose_qy: Float!,
+            pose_qz: Float!,
+            pose_qw: Float!): Location
+
+        }
+
+        type Schema {
+          mutation: Mutation
+        }
+
+  UpdaterHistoricalDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt UpdaterHistoricalApi.ApiId
+      Name: !Sub ${APIName}_updater_historical_table
+      Description: "The historical updater location Table AppSync Data Source"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt UpdaterHistoricalDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref UpdaterHistoricalTable
+        AwsRegion: !Sub ${AWS::Region}
+
+
+  addLocationResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: UpdaterHistoricalSchema
+    Properties:
+      ApiId: !GetAtt UpdaterHistoricalApi.ApiId
+      TypeName: Mutation
+      FieldName: addLocation
+      DataSourceName: !GetAtt UpdaterHistoricalDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2022-01-18",
+          "operation": "PutItem",
+          "key": {
+            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
+            "user_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+          },
+          "attributeValues": {
+            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
+            "pose_x": $util.dynamodb.toDynamoDBJson($ctx.args.pose.x),
+            "pose_y": $util.dynamodb.toDynamoDBJson($ctx.args.pose.y),
+            "pose_z": $util.dynamodb.toDynamoDBJson($ctx.args.pose.z),
+            "pose_qx": $util.dynamodb.toDynamoDBJson($ctx.args.pose.qx),
+            "pose_qy": $util.dynamodb.toDynamoDBJson($ctx.args.pose.qy),
+            "pose_qz": $util.dynamodb.toDynamoDBJson($ctx.args.pose.qz),
+            "pose_qw": $util.dynamodb.toDynamoDBJson($ctx.args.pose.qw),
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
+
+
+
+  
   
 
 
@@ -244,3 +401,23 @@ Outputs:
   HelloWorldFunctionIamRole:
     Description: "Implicit IAM Role created for Hello World function"
     Value: !GetAtt HelloWorldFunctionRole.Arn
+
+  TagsHistoricalTableName:
+    Description: The name of the TagsHistoricalTable
+    Value: !Ref TagsHistoricalTable
+
+  TagsHistoricalApiEndpoint:
+    Description: The URL to the TagsHistoricalApi Endpoint
+    Value: !GetAtt TagsHistoricalApi.GraphQLUrl
+
+  TagsHistoricalApiId:
+    Description: The API ID of the TagsHistoricalApi
+    Value: !GetAtt TagsHistoricalApi.ApiId
+
+  UpdaterHistoricalApiEndpoint:
+    Description: The URL to the UpdaterHistoricalApi Endpoint
+    Value: !GetAtt UpdaterHistoricalApi.GraphQLUrl
+
+  UpdaterHistoricalApiId:
+    Description: The API ID of the UpdaterHistoricalApi
+    Value: !GetAtt UpdaterHistoricalApi.ApiId

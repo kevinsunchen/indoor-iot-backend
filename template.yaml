@@ -122,10 +122,10 @@ Resources:
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
   
-  DynamoDBRole:
+  TagsHistoricalDBRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${APIName}-appsync-dynamodb-role
+      RoleName: !Sub ${APIName}-tags-historical-role
       ManagedPolicyArns:
         - Ref: AppSyncDynamoDBPolicy
       AssumeRolePolicyDocument:
@@ -138,13 +138,13 @@ Resources:
               Service:
                 - appsync.amazonaws.com
     DependsOn:
-      - AppSyncDynamoDBPolicy
+      -   TagsHistoricalDBPolicy
 
-  AppSyncDynamoDBPolicy:
+  TagsHistoricalDBPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       Description: Managed policy to allow AWS AppSync to access the tables created by this template.
-      Path: /appsync/
+      Path: /tags_historical/
       PolicyDocument:
         Version: 2022-1-14
         Statement:
@@ -158,50 +158,55 @@ Resources:
               - dynamodb:Scan
               - dynamodb:BatchGetItem
               - dynamodb:BatchWriteItem
-            Resource: !Join [ "", [ [!GetAtt IntermediateLocationsTable.Arn, "*"], [!GetAtt LocalizedTagsTable.Arn, "*" ]]]
+            Resource: !Join [ "", [!GetAtt TagsHistoricalTable.Arn, "*"]]
   
-  AppSyncApi:
+  TagsHistoricalApi:
     Type: "AWS::AppSync::GraphQLApi"
-    Description: "The GraphQL API for the App/Mobile"
+    Description: "The GraphQL API for sending historical tag measurements"
     Properties:
       AuthenticationType: "AMAZON_COGNITO_USER_POOLS"
-      Name: !Sub ${APIName}
+      Name: !Sub ${APIName}-tags-historical-api
       UserPoolConfig:
         UserPoolId: !Ref UserPoolClient
         AwsRegion: !Sub ${AWS::Region}
         DefaultAction: "ALLOW"
 
-  AppSyncSchema:
+  TagsHistoricalSchema:
     Type: "AWS::AppSync::GraphQLSchema"
     Properties:
-      ApiId: !GetAtt AppSyncApi.ApiId
+      ApiId: !GetAtt TagsHistoricalApi.ApiId
       Definition: |
-        type Intermediate {
-          EPC: String!
-          estimate_list: [channel_estimates]!
+        type Measurement {
+          id: ID!
+          epc: String!
+          user_id: String!
+          area_id: Int!
+          channel_estimates: [Complex]
           timestamp: String!
-          device_id: String!
-          area_id: int!
         }
 
-        type Channel_estimates {
-          real: float!
-          imaginary: float!
+        type Complex {
+          measurement_id: ID!
+          real: Float!
+          imaginary: Float!
         }
 
         type Query {
-          allIntermediate(limit: Int, nextToken: String): [Intermediate]
-          getIntermediate(EPC: String!, timestamp: String!): Intermediate
+          getAreaMeasurements(area_id: Int!): [Measurement]
+          getTimedMeasurements(user_id: String!, timestamp: String!): [Measurement]
         }
 
         type Mutation {
-          addIntermediate(EPC: String!,
-          estimate_list: [channel_estimates]!,
-          timestamp: String!,
-          device_id: String!,
-          area_id: int!): Intermediate
-          
-          deleteNote(EPC: String!,timestamp: String!): Intermediate
+          addMeasurement(id: ID!,
+            epc: String!,
+            timestamp: String!,
+            user_id: String!,
+            area_id: Int!): Measurement
+
+          addComplex(measurement_id: ID!,
+            real: Float!
+            imaginary: Float!): Comment
+
         }
 
         type Schema {
@@ -209,19 +214,21 @@ Resources:
           mutation: Mutation
         }
 
-  AppSyncIntermediateTableDataSource:
+  TagsHistoricalDataSource:
     Type: "AWS::AppSync::DataSource"
     Properties:
-      ApiId: !GetAtt AppSyncApi.ApiId
-      Name: !Sub ${APIName}_intermediate_table
-      Description: "The intermediate Table AppSync Data Source"
+      ApiId: !GetAtt TagsHistoricalApi.ApiId
+      Name: !Sub ${APIName}_tags_historical_table
+      Description: "The historical tag Table AppSync Data Source"
       Type: AMAZON_DYNAMODB
-      ServiceRoleArn: !GetAtt DynamoDBRole.Arn
+      ServiceRoleArn: !GetAtt TagsHistoricalDBRole.Arn
       DynamoDBConfig:
-        TableName: !Ref IntermediateLocationsTable
+        TableName: !Ref TagsHistoricalTable
         AwsRegion: !Sub ${AWS::Region}
 
   
+
+
 
 
 Outputs:

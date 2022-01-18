@@ -379,6 +379,186 @@ Resources:
         }
       ResponseMappingTemplate: "$util.toJson($ctx.result)"
 
+  LocalizedTagsDBRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${APIName}-localized-tags-role
+      ManagedPolicyArns:
+        - Ref: LocalizedTagsDBPolicy
+      AssumeRolePolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+    DependsOn:
+      -   LocalizedTagsDBPolicy
+
+  LocalizedTagsDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
+      Path: /localized_tags/
+      PolicyDocument:
+        Version: 2022-1-14
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: !Join [ "", [!GetAtt LocalizedTagsTable.Arn, "*"]]
+  
+  LocalizedTagsApi:
+    Type: "AWS::AppSync::GraphQLApi"
+    Description: "The GraphQL API for sending historical updater location"
+    Properties:
+      AuthenticationType: "API_KEY"
+      Name: !Sub ${APIName}-localized-tags-api
+
+  LocalizedTagsApiKey:
+    Type: "AWS::AppSync::ApiKey"
+    Properties:
+      Description: "LocalizedTagsApi Key"
+      Expires: 1564608763
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      
+
+  LocalizedTagsSchema:
+    Type: "AWS::AppSync::GraphQLSchema"
+    Properties:
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      Definition: |
+        type Tag {
+          timestamp: String!,
+          epc: String!,
+          area_id: Int!,
+          status: Int!,
+          location_x: Float!,
+          location_y: Float!,
+          location_z: Float!,
+          precision_radius: Float!
+        }
+
+        type AllTags {
+          tags: [Tag!]!
+        }
+
+        type Query {
+            getAreaTags(area_id: Int): AllTags!
+            getTag(epc: String!): Tag
+        }
+
+        type Mutation {
+          addLocalizedTags(
+            timestamp: String!,
+            epc: String!,
+            area_id: Int!,
+            status: Int!,
+            location_x: Float!,
+            location_y: Float!,
+            location_z: Float!,
+            precision_radius: Float!): Tag
+
+        }
+
+        type Schema {
+          mutation: Mutation
+          query: Query
+        }
+
+  LocalizedTagsDataSource:
+    Type: "AWS::AppSync::DataSource"
+    Properties:
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      Name: !Sub ${APIName}_localized)_tags_table
+      Description: "The localized tags AppSync Data Source"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt LocalizedTagsDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref LocalizedTagsTable
+        AwsRegion: !Sub ${AWS::Region}
+
+  getAreaTagsResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: LocalizedTagsSchema
+    Properties:
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      TypeName: Query
+      FieldName: getAreaTags
+      DataSourceName: !GetAtt LocalizedTagsDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2022-01-18",
+          "operation": "Query",
+          "query": {
+            "expression": "AreaId = :area_id",
+            "expressionValues": {
+              ":area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id)
+            }
+          }
+        },
+       
+      ResponseMappingTemplate: |
+        {
+          "area_tags": $util.toJson($ctx.result.items),
+          "area_id": $util.toJson(${ctx.args.area_id})
+        }
+
+  getTagResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: LocalizedTagsSchema
+    Properties:
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      TypeName: Query
+      FieldName: getTag
+      DataSourceName: !GetAtt LocalizedTagsDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2022-01-18",
+          "operation": "GetItem",
+          "key": {
+            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc)
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
+
+  addLocalizedTagsResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn: LocalizedTagsSchema
+    Properties:
+      ApiId: !GetAtt LocalizedTagsApi.ApiId
+      TypeName: Mutation
+      FieldName: addLocalizedTags
+      DataSourceName: !GetAtt LocalizedTagsDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2022-01-18",
+          "operation": "PutItem",
+          "key": {
+            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
+            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc)
+          },
+          "attributeValues": {
+            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
+            "status": $util.dynamodb.toDynamoDBJson($ctx.args.status),
+            "location_x": $util.dynamodb.toDynamoDBJson($ctx.args.location.x),
+            "location_y": $util.dynamodb.toDynamoDBJson($ctx.args.location.y),
+            "location_z": $util.dynamodb.toDynamoDBJson($ctx.args.location.z),
+            "precision_radius": $util.dynamodb.toDynamoDBJson($ctx.args.precision_radius)
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
 
 
 

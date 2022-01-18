@@ -601,3 +601,11 @@ Outputs:
   UpdaterHistoricalApiId:
     Description: The API ID of the UpdaterHistoricalApi
     Value: !GetAtt UpdaterHistoricalApi.ApiId
+
+  LocalizedTagsApiEndpoint:
+    Description: The URL to the LocalizedTagsAPi Endpoint
+    Value: !GetAtt LocalizedTagsApi.GraphQLUrl
+
+  LocalizedTagsApiId:
+    Description: The API ID of the LocalizedTagsApi
+    Value: !GetAtt LocalizedTagsApi.ApiId

@@ -221,7 +221,6 @@ Resources:
         TableName: !Ref IntermediateLocationsTable
         AwsRegion: !Sub ${AWS::Region}
 
-  
 
 
 Outputs:

@@ -10,17 +10,17 @@ import java.util.stream.Collectors;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 
 /**
  * Handler for requests to LocalizationFunction Lambda function.
  * 
  * https://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
  */
-public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class App implements RequestHandler<DynamodbEvent, APIGatewayProxyResponseEvent> {
 
-    public APIGatewayProxyResponseEvent handleRequest(final APIGatewayProxyRequestEvent input, final Context context) {
+    public APIGatewayProxyResponseEvent handleRequest(final DynamodbEvent input, final Context context) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Content-Type", "application/json");
         headers.put("X-Custom-Header", "application/json");

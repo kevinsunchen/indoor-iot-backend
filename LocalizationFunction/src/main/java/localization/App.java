@@ -14,7 +14,9 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 
 /**
- * Handler for requests to Lambda function.
+ * Handler for requests to LocalizationFunction Lambda function.
+ * 
+ * https://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
  */
 public class App implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 

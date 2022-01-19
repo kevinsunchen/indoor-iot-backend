@@ -21,9 +21,9 @@ Resources:
   LocalizationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: LocalizationFunction
-      Handler: localization.App::handleRequest
-      Runtime: java11
+      CodeUri: localization_function
+      Handler: localization_handler.handle_request
+      Runtime: python3.8
       Architectures:
         - x86_64
       MemorySize: 512
@@ -42,7 +42,7 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: IntermediateLocationsFunction
-      Handler: intermediatelocations.App::handleRequest
+      Handler: intermediatelocations.MeasurementsHandler::handleRequest
       Runtime: java11
       Architectures:
         - x86_64

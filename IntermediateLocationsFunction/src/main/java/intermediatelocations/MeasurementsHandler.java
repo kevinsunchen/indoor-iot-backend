@@ -14,7 +14,9 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 
 /**
- * Handler for requests to Lambda function.
+ * Handler for requests to IntermediateLocationsFunction Lambda function.
+ * 
+ * https://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
  */
 public class MeasurementsHandler implements RequestHandler<DynamodbEvent, String> {
 

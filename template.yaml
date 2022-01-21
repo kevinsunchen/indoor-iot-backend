@@ -118,12 +118,12 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: user_id
-          AttributeType: S
+        - AttributeName: area_id
+          AttributeType: N
         - AttributeName: epc
           AttributeType: S    
       KeySchema: 
-        - AttributeName: user_id
+        - AttributeName: area_id
           KeyType: HASH
         - AttributeName: epc
           KeyType: RANGE
@@ -545,7 +545,7 @@ Resources:
           "version": "2022-01-18",
           "operation": "PutItem",
           "key": {
-            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
+            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
             "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc)
           },
           "attributeValues": {

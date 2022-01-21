@@ -1,7 +1,9 @@
 from __future__ import print_function
-import numpy
-import scipy
+import boto3
+import localize_utils
 
 def handle_request(event, context):
-    print(numpy.abs(-100))
-    return "Hello hello"
+    for record in event["Records"]:
+        print(record)
+        
+    return "localization_handler finished running" + "\n"

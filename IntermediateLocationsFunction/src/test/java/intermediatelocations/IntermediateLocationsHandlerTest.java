@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
-public class MeasurementsHandlerTest {
+public class IntermediateLocationsHandlerTest {
   @Test
   public void successfulResponse() {
     // TODO

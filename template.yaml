@@ -28,21 +28,21 @@ Globals:
 
 Resources:
   
+
   ################################
   ### Lambda Functions, Layers ###
   ################################
 
-
   IntermediateLocationsFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function 
     Properties:
       CodeUri: IntermediateLocationsFunction
-      Handler: intermediatelocations.MeasurementsHandler::handleRequest
+      Handler: intermediatelocations.IntermediateLocationsHandler::handleRequest
       Runtime: java11
       Architectures:
         - x86_64
       MemorySize: 512
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+      Environment:
         Variables:
           PARAM1: VALUE
       Events:
@@ -93,14 +93,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           AttributeType: S
-        - AttributeName: epc
+        - AttributeName: Epc
           AttributeType: S
       KeySchema: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           KeyType: HASH
-        - AttributeName: epc
+        - AttributeName: Epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
@@ -110,14 +110,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           AttributeType: S
-        - AttributeName: timestamp
+        - AttributeName: Timestamp
           AttributeType: S
       KeySchema: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           KeyType: HASH
-        - AttributeName: timestamp
+        - AttributeName: Timestamp
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
 
@@ -125,14 +125,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           AttributeType: S
-        - AttributeName: epc
+        - AttributeName: Epc
           AttributeType: S
       KeySchema: 
-        - AttributeName: user_id
+        - AttributeName: Device_id
           KeyType: HASH
-        - AttributeName: epc
+        - AttributeName: Epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       StreamSpecification:
@@ -142,14 +142,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: area_id
+        - AttributeName: Area_id
           AttributeType: N
-        - AttributeName: epc
+        - AttributeName: Epc
           AttributeType: S    
       KeySchema: 
-        - AttributeName: area_id
+        - AttributeName: Area_id
           KeyType: HASH
-        - AttributeName: epc
+        - AttributeName: Epc
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
   
@@ -218,20 +218,20 @@ Resources:
       ApiId: !GetAtt TagsHistoricalApi.ApiId
       Definition: |
         type Measurement {
-          epc: String!,
-          timestamp: String!,
-          user_id: String!,
-          area_id: Int!,
-          channel_estimates: [[Float!]!]!
+          Epc: String!,
+          Timestamp: String!,
+          Device_id: String!,
+          Area_id: Int!,
+          Channel_estimates: [[Float!]!]!
         }
 
         type Mutation {
           addMeasurement(
-            epc: String!,
-            timestamp: String!,
-            user_id: String!,
-            area_id: Int!,
-            channel_estimates: [[Float!]!]!
+            Epc: String!,
+            Timestamp: String!,
+            Device_id: String!,
+            Area_id: Int!,
+            Channel_estimates: [[Float!]!]!
             ): Measurement
 
         }
@@ -265,13 +265,13 @@ Resources:
           "version": "2022-01-18",
           "operation": "PutItem",
           "key": {
-            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc),
-            "user_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+            "Epc": $util.dynamodb.toDynamoDBJson($ctx.args.Epc),
+            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
           },
           "attributeValues": {
-            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
-            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
-            "channel_estimates": $util.dynamodb.toDynamoDBJson($ctx.args.channel_estimates)
+            "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
+            "Timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.Timestamp),
+            "Channel_estimates": $util.dynamodb.toDynamoDBJson($ctx.args.Channel_estimates)
           }
         }
       ResponseMappingTemplate: "$util.toJson($ctx.result)"
@@ -335,9 +335,9 @@ Resources:
       ApiId: !GetAtt UpdaterHistoricalApi.ApiId
       Definition: |
         type Location {
-          timestamp: String!,
-          user_id: String!,
-          area_id: Int!,
+          Timestamp: String!,
+          Device_id: String!,
+          Area_id: Int!,
           pose_x: Float!,
           pose_y: Float!,
           pose_z: Float!,
@@ -349,9 +349,9 @@ Resources:
 
         type Mutation {
           addLocation(
-            timestamp: String!,
-            user_id: String!,
-            area_id: Int!,
+            Timestamp: String!,
+            Device_id: String!,
+            Area_id: Int!,
             pose_x: Float!,
             pose_y: Float!,
             pose_z: Float!,
@@ -391,11 +391,11 @@ Resources:
           "version": "2022-01-18",
           "operation": "PutItem",
           "key": {
-            "timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.timestamp),
-            "user_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+            "Timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.Timestamp),
+            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
           },
           "attributeValues": {
-            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
+            "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
             "pose_x": $util.dynamodb.toDynamoDBJson($ctx.args.pose.x),
             "pose_y": $util.dynamodb.toDynamoDBJson($ctx.args.pose.y),
             "pose_z": $util.dynamodb.toDynamoDBJson($ctx.args.pose.z),
@@ -466,9 +466,9 @@ Resources:
       ApiId: !GetAtt LocalizedTagsApi.ApiId
       Definition: |
         type Tag {
-          timestamp: String!,
-          epc: String!,
-          area_id: Int!,
+          Timestamp: String!,
+          Epc: String!,
+          Area_id: Int!,
           status: Int!,
           location_x: Float!,
           location_y: Float!,
@@ -481,15 +481,15 @@ Resources:
         }
 
         type Query {
-            getAreaTags(area_id: Int): AllTags!
-            getTag(epc: String!): Tag
+            getAreaTags(Area_id: Int): AllTags!
+            getTag(Epc: String!): Tag
         }
 
         type Mutation {
           addLocalizedTags(
-            timestamp: String!,
-            epc: String!,
-            area_id: Int!,
+            Timestamp: String!,
+            Epc: String!,
+            Area_id: Int!,
             status: Int!,
             location_x: Float!,
             location_y: Float!,
@@ -528,9 +528,9 @@ Resources:
           "version": "2022-01-18",
           "operation": "Query",
           "query": {
-            "expression": "AreaId = :area_id",
+            "expression": "AreaId = :Area_id",
             "expressionValues": {
-              ":area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id)
+              ":Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id)
             }
           }
         },
@@ -538,7 +538,7 @@ Resources:
       ResponseMappingTemplate: |
         {
           "area_tags": $util.toJson($ctx.result.items),
-          "area_id": $util.toJson(${ctx.args.area_id})
+          "Area_id": $util.toJson(${ctx.args.Area_id})
         }
 
   getTagResolver:
@@ -554,7 +554,7 @@ Resources:
           "version": "2022-01-18",
           "operation": "GetItem",
           "key": {
-            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc)
+            "Epc": $util.dynamodb.toDynamoDBJson($ctx.args.Epc)
           }
         }
       ResponseMappingTemplate: "$util.toJson($ctx.result)"
@@ -573,11 +573,11 @@ Resources:
           "version": "2022-01-18",
           "operation": "PutItem",
           "key": {
-            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
-            "epc": $util.dynamodb.toDynamoDBJson($ctx.args.epc)
+            "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
+            "Epc": $util.dynamodb.toDynamoDBJson($ctx.args.Epc)
           },
           "attributeValues": {
-            "area_id": $util.dynamodb.toDynamoDBJson($ctx.args.area_id),
+            "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
             "status": $util.dynamodb.toDynamoDBJson($ctx.args.status),
             "location_x": $util.dynamodb.toDynamoDBJson($ctx.args.location.x),
             "location_y": $util.dynamodb.toDynamoDBJson($ctx.args.location.y),

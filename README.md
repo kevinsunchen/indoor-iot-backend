@@ -1,8 +1,11 @@
 # indoor-iot-backend
 
 Authors: Kevin Chen, Zitong Chen
+
 Supervisor: Isaac Perper
+
 Faculty Supervisor: Fadel Adib
+
 [Signal Kinetics Group, MIT Media Lab](https://www.media.mit.edu/groups/signal-kinetics/overview/)
 
 This repository contains source code and supporting files for the Indoor IoT project backend. The backend utilizes the AWS Serverless Application Model (SAM) for its infrastructure. For more information on SAM and why it was chosen for this project, refer to [this document](why_sam.pdf).
@@ -21,7 +24,7 @@ The handler code for the IntermediateLocationsFunction (Java11) is written. This
 
 The handler code for the LocalizationFunction (Python3) is incomplete. More specifically, it still requires integration with the `multi_fusion.py` and `localize_utils.py` code, as well as code to handle update events from the IntermediateLocationsQueue DynamoDB stream, and code to update the LocalizedTags DynamoDB table. It also needs to be tested and possibly debugged. 
 
-## Quick Start
+## Quick start
 
 Edit the code using the relevant AWS SDKs for the language. To build and deploy, install the following:
 
@@ -117,7 +120,7 @@ indoor-iot-backend$ sam local start-api
 indoor-iot-backend$ curl http://localhost:3000/
 ```
 
-## Add a resource to your application
+## Add a resource to the application
 
 The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as functions, triggers, and APIs. For resources not included in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html) resource types.
 

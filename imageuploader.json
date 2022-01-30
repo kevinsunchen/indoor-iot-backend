@@ -1,0 +1,120 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+       "version": "2016-10-21T17:26:28Z",
+       "title": "ApiName"
+    },
+    "paths": {
+       "/s3": {
+          "get": {
+             "parameters": [
+                {
+                   "name": "key",
+                   "in": "query",
+                   "required": false,
+                   "schema": {
+                      "type": "string"
+                   }
+                }
+             ],
+             "responses": {
+                "200": {
+                   "description": "200 response",
+                   "content": {
+                      "application/json": {
+                         "schema": {
+                            "$ref": "#/components/schemas/Empty"
+                         }
+                      }
+                   }
+                },
+                "500": {
+                   "description": "500 response"
+                }
+             },
+             "x-amazon-apigateway-integration": {
+                "credentials": "arn:aws:iam::477318148124:role/apis3imagerole",
+                "responses": {
+                   "default": {
+                      "statusCode": "500"
+                   },
+                   "2\\d{2}": {
+                      "statusCode": "200"
+                   }
+                },
+                "requestParameters": {
+                   "integration.request.path.key": "method.request.querystring.key"
+                },
+                "uri": "arn:aws:apigateway:us-east-2:s3:path/{key}",
+                "passthroughBehavior": "when_no_match",
+                "httpMethod": "GET",
+                "type": "aws"
+             }
+          },
+          "put": {
+             "parameters": [
+                {
+                   "name": "key",
+                   "in": "query",
+                   "required": false,
+                   "schema": {
+                      "type": "string"
+                   }
+                }
+             ],
+             "responses": {
+                "200": {
+                   "description": "200 response",
+                   "content": {
+                      "application/json": {
+                         "schema": {
+                            "$ref": "#/components/schemas/Empty"
+                         }
+                      },
+                      "application/octet-stream": {
+                         "schema": {
+                            "$ref": "#/components/schemas/Empty"
+                         }
+                      }
+                   }
+                },
+                "500": {
+                   "description": "500 response"
+                }
+             },
+             "x-amazon-apigateway-integration": {
+                "credentials": "arn:aws:iam::477318148124:role/apis3imagerole",
+                "responses": {
+                   "default": {
+                      "statusCode": "500"
+                   },
+                   "2\\d{2}": {
+                      "statusCode": "200"
+                   }
+                },
+                "requestParameters": {
+                   "integration.request.path.key": "method.request.querystring.key"
+                },
+                "uri": "arn:aws:apigateway:us-east-2:s3:path/{key}",
+                "passthroughBehavior": "when_no_match",
+                "httpMethod": "PUT",
+                "type": "aws",
+                "contentHandling": "CONVERT_TO_BINARY"
+             }
+          }
+       }
+    },
+    "x-amazon-apigateway-binary-media-types": [
+       "application/octet-stream",
+       "image/jpeg"
+    ],
+    "components": {
+       "schemas": {
+          "Empty": {
+             "type": "object",
+             "title": "Empty Schema"
+          }
+       }
+    }
+ }
+ 

@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  indoor-iot-backend
   SAM Template for indoor-iot-backend
 
 Parameters:
@@ -12,12 +11,12 @@ Parameters:
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
 
-  APIKey:
-    Type: String
-    Description: The API Key for the mapping app
-    MinLength: 32
-    MaxLength: 32
-    AllowedPattern: '^[a-f0-9]*$'
+  # APIKey:
+  #   Type: String
+  #   Description: The API Key for the mapping app
+  #   MinLength: 32
+  #   MaxLength: 32
+  #   AllowedPattern: '^[a-f0-9]*$'
 
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
@@ -28,7 +27,6 @@ Globals:
 
 Resources:
   
-
   ################################
   ### Lambda Functions, Layers ###
   ################################
@@ -166,7 +164,7 @@ Resources:
       ManagedPolicyArns:
         - Ref: TagsHistoricalDBPolicy
       AssumeRolePolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -183,7 +181,7 @@ Resources:
       Description: Managed policy to allow AWS AppSync to access the tables created by this template.
       Path: /tags_historical/
       PolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -208,7 +206,7 @@ Resources:
     Type: "AWS::AppSync::ApiKey"
     Properties:
       Description: "TagsHistoricalApi Key"
-      Expires: 1564608763
+      Expires: 1643691600 # Change to future date
       ApiId: !GetAtt TagsHistoricalApi.ApiId
       
 
@@ -217,6 +215,15 @@ Resources:
     Properties:
       ApiId: !GetAtt TagsHistoricalApi.ApiId
       Definition: |
+        schema {
+          mutation: Mutation
+          query: Query
+        }
+
+        type Query {
+          getMeasurement(Epc: String!): Measurement
+        }
+
         type Measurement {
           Epc: String!,
           Timestamp: String!,
@@ -233,11 +240,6 @@ Resources:
             Area_id: Int!,
             Channel_estimates: [[Float!]!]!
             ): Measurement
-
-        }
-
-        type Schema {
-          mutation: Mutation
         }
 
   TagsHistoricalDataSource:
@@ -266,7 +268,7 @@ Resources:
           "operation": "PutItem",
           "key": {
             "Epc": $util.dynamodb.toDynamoDBJson($ctx.args.Epc),
-            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.Device_id)
           },
           "attributeValues": {
             "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
@@ -283,7 +285,7 @@ Resources:
       ManagedPolicyArns:
         - Ref: UpdaterHistoricalDBPolicy
       AssumeRolePolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -300,7 +302,7 @@ Resources:
       Description: Managed policy to allow AWS AppSync to access the tables created by this template.
       Path: /updater_historical/
       PolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -312,7 +314,10 @@ Resources:
               - dynamodb:Scan
               - dynamodb:BatchGetItem
               - dynamodb:BatchWriteItem
-            Resource: !Join [ "", [!GetAtt UpdaterHistoricalTable.Arn, "*"]]
+            Resource: !Join
+              - ''
+              - - !GetAtt 'UpdaterHistoricalTable.Arn'
+                - '*'
   
   UpdaterHistoricalApi:
     Type: "AWS::AppSync::GraphQLApi"
@@ -325,15 +330,23 @@ Resources:
     Type: "AWS::AppSync::ApiKey"
     Properties:
       Description: "UpdaterHistoricalApi Key"
-      Expires: 1564608763
+      Expires: 1643691600 # Change to future date
       ApiId: !GetAtt UpdaterHistoricalApi.ApiId
-      
 
   UpdaterHistoricalSchema:
     Type: "AWS::AppSync::GraphQLSchema"
     Properties:
       ApiId: !GetAtt UpdaterHistoricalApi.ApiId
       Definition: |
+        schema {
+          mutation: Mutation
+          query: Query
+        }
+
+        type Query {
+          getLocation(Timestamp: String!): Location
+        }
+
         type Location {
           Timestamp: String!,
           Device_id: String!,
@@ -359,11 +372,6 @@ Resources:
             pose_qy: Float!,
             pose_qz: Float!,
             pose_qw: Float!): Location
-
-        }
-
-        type Schema {
-          mutation: Mutation
         }
 
   UpdaterHistoricalDataSource:
@@ -392,7 +400,7 @@ Resources:
           "operation": "PutItem",
           "key": {
             "Timestamp": $util.dynamodb.toDynamoDBJson($ctx.args.Timestamp),
-            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.device_id)
+            "Device_id": $util.dynamodb.toDynamoDBJson($ctx.args.Device_id)
           },
           "attributeValues": {
             "Area_id": $util.dynamodb.toDynamoDBJson($ctx.args.Area_id),
@@ -414,7 +422,7 @@ Resources:
       ManagedPolicyArns:
         - Ref: LocalizedTagsDBPolicy
       AssumeRolePolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -431,7 +439,7 @@ Resources:
       Description: Managed policy to allow AWS AppSync to access the tables created by this template.
       Path: /localized_tags/
       PolicyDocument:
-        Version: 2022-1-14
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
@@ -443,7 +451,10 @@ Resources:
               - dynamodb:Scan
               - dynamodb:BatchGetItem
               - dynamodb:BatchWriteItem
-            Resource: !Join [ "", [!GetAtt LocalizedTagsTable.Arn, "*"]]
+            Resource: !Join 
+              -  ""
+              - - !GetAtt LocalizedTagsTable.Arn
+                - "*"
   
   LocalizedTagsApi:
     Type: "AWS::AppSync::GraphQLApi"
@@ -456,7 +467,7 @@ Resources:
     Type: "AWS::AppSync::ApiKey"
     Properties:
       Description: "LocalizedTagsApi Key"
-      Expires: 1564608763
+      Expires: 1643691600 # Change to future date
       ApiId: !GetAtt LocalizedTagsApi.ApiId
       
 
@@ -465,6 +476,11 @@ Resources:
     Properties:
       ApiId: !GetAtt LocalizedTagsApi.ApiId
       Definition: |
+        schema {
+          mutation: Mutation
+          query: Query
+        }
+
         type Tag {
           Timestamp: String!,
           Epc: String!,
@@ -495,19 +511,13 @@ Resources:
             location_y: Float!,
             location_z: Float!,
             precision_radius: Float!): Tag
-
-        }
-
-        type Schema {
-          mutation: Mutation
-          query: Query
         }
 
   LocalizedTagsDataSource:
     Type: "AWS::AppSync::DataSource"
     Properties:
       ApiId: !GetAtt LocalizedTagsApi.ApiId
-      Name: !Sub ${APIName}_localized)_tags_table
+      Name: !Sub ${APIName}_localized_tags_table
       Description: "The localized tags AppSync Data Source"
       Type: AMAZON_DYNAMODB
       ServiceRoleArn: !GetAtt LocalizedTagsDBRole.Arn
@@ -588,27 +598,19 @@ Resources:
       ResponseMappingTemplate: "$util.toJson($ctx.result)"
 
 
-
-
-  
-  
-
-
-
-
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  # HelloWorldApi:
+  #   Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+  #   Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  # HelloWorldFunction:
+  #   Description: "Hello World Lambda Function ARN"
+  #   Value: !GetAtt HelloWorldFunction.Arn
+  # HelloWorldFunctionIamRole:
+  #   Description: "Implicit IAM Role created for Hello World function"
+  #   Value: !GetAtt HelloWorldFunctionRole.Arn
 
   TagsHistoricalTableName:
     Description: The name of the TagsHistoricalTable

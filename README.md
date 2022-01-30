@@ -1,11 +1,17 @@
 # indoor-iot-backend
 
+
+
+## About SAM
+
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
-- HelloWorldFunction/src/main - Code for the application's Lambda function.
+- IntermediateLocationsFunction/src/main - Code for the IntermediateLocationsFunction Lambda function, written in Java and built with Gradle.
+- localization_function - Code for the LocalizationFunction Lambda function, written in Python.
+- localization_dependency_layer - A Lambda Layer holding the dependencies for the LocalizationFunction Lambda function.
 - events - Invocation events that you can use to invoke the function.
-- HelloWorldFunction/src/test - Unit tests for the application code. 
 - template.yaml - A template that defines the application's AWS resources.
+- samconfig.toml - A config file defining default parameters for deploying this application with the SAM CLI.
 
 The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 

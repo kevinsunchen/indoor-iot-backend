@@ -1,0 +1,28 @@
+One thing I learned from the development of our backend system is that it is 
+really a iterative process. Starting from a simple linear diagram of different 
+AWS services forming pipelines to the final product with a web-like structure,
+I learned to not be afraid of adapting the system to accommodate to users' need.
+
+This brings out my second point: Communication is the key to prouctivity. For example, 
+when I dropped an API endpoint and protocol in the Slack channel, it took a while for
+the frontend developers to see the message and test it. When they spotted a bug, they
+responded in the same channel, which again took me some time to see it and make changes.
+When I am done debugging, I pinned the channel again... In this back and forth messaging,
+a lot of time was spent waiting for each other, while this could be a simple issue
+easy to resolve in person. To improve efficiency, I think organizing one work session
+per week for developers from different teams to sit down and help each other understand
+different parts of the IoT system would be a tremendus help during the final integration.
+However, I also fo understand how tied-up many of us are getting to the end of IAP.
+
+Last but not least, I want to say that documentation matters. Not only external documentations,
+but also documentations within the code. A clean method signature can communicate information
+more effectively and accurately than a whole paragraph. As I reflected on how we can 
+promote collaboration between teams, I found that perhaps the very best first step is
+for the two teams to sit down and make an agreement on the request/response signature/floatformat.
+This helps to avoid the awkwardness of "this is what we built, deal with it in whatever 
+way you can". 
+
+Overall, I appreciate this experience working in a team to turn a facinating piece of 
+technology into a product that is applicable and helpful in real life. I will take all
+the lessons I learned departing from this project, and I hope the very best for everyone
+who continues to contribute to the project in future.
